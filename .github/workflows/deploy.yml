@@ -2,31 +2,56 @@ name: Deploy Data
 on:
   push:
     branches: [ "deploy" ]
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Docker Login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
+
       - name: Build and Push
         run: |
           docker build -t ${{ secrets.DOCKER_USER }}/innovatech-data:latest .
           docker push ${{ secrets.DOCKER_USER }}/innovatech-data:latest
+
       - name: SSH Deploy (via Bastion)
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EC2_HOST }}
-          proxy_host: ${{ secrets.BASTION_HOST }}
+          
+          host: ${{ secrets.DB_HOST }}
           username: ec2-user
           key: ${{ secrets.SSH_KEY }}
+          
+          
+          proxy_host: ${{ secrets.EC2_HOST }}     
+          proxy_username: ec2-user
+          proxy_key: ${{ secrets.SSH_KEY }}
+          
           script: |
             mkdir -p ~/app && cd ~/app
-            export DOCKER_USER=${{ secrets.DOCKER_USER }}
-            export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            export DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
-            docker-compose pull
-            docker-compose up -d --build
+
+            # Crear el archivo docker-compose.yml con los secretos reales
+            cat <<EOF > docker-compose.yml
+            services:
+              db:
+                image: ${{ secrets.DOCKER_USER }}/innovatech-data:latest
+                container_name: data_service
+                restart: always
+                environment:
+                  - MYSQL_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
+                  - MYSQL_PASSWORD=${{ secrets.DB_PASSWORD }}
+                  - MYSQL_DATABASE=innovatech_db
+                  - MYSQL_USER=innovatech_user
+                ports:
+                  - "3306:3306"
+            EOF
+
+            # Ejecutar con sudo para evitar errores de permisos en Amazon Linux
+            sudo docker-compose pull
+            sudo docker-compose up -d --build

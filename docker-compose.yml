@@ -14,10 +14,10 @@ services:
     volumes:
       - db_persistence:/var/lib/mysql
     networks:
-      - data-net
+      - deploy-net
 
 networks:
-  data-net:
+  deploy-net:
     driver: bridge
 
 volumes:

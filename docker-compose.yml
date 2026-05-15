@@ -7,9 +7,9 @@ services:
     restart: always
     environment:
       # Definimos la contraseña del superusuario root
-      - MYSQL_ROOT_PASSWORD=${{ secrets.DB_PASSWORD}}
+      - MYSQL_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
       - MYSQL_DATABASE=proyecto_db
-      - MYSQL_USER=user1
+      #- MYSQL_USER=user1
       - MYSQL_PASSWORD=${{ secrets.DB_PASSWORD }}
     ports:
       - "3306:3306"
@@ -24,10 +24,3 @@ networks:
 
 volumes:
   db_persistence:
-
-  environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
-      - MYSQL_DATABASE=proyecto_db
-      # IMPORTANTE: Borra o comenta estas líneas:
-      # - MYSQL_USER=root  <-- ESTA ES LA QUE MATA EL CONTENEDOR
-      # - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}

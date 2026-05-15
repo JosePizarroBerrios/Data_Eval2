@@ -9,8 +9,7 @@ services:
       # Definimos la contraseña del superusuario root
       - MYSQL_ROOT_PASSWORD=${DB_PASSWORD} 
       - MYSQL_DATABASE=proyecto_db
-      # Si necesitas un usuario extra, cámbiale el nombre a algo que no sea 'root'
-      - MYSQL_USER=admin_user 
+      - MYSQL_USER=user1
       - MYSQL_PASSWORD=${DB_PASSWORD}
     ports:
       - "3306:3306"

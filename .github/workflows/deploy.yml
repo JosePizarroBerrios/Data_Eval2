@@ -23,34 +23,70 @@ jobs:
       - name: SSH Deploy (via Bastion)
         uses: appleboy/ssh-action@master
         with:
-          
+
           host: ${{ secrets.DB_HOST_PRIVATE_IP }}
           username: ec2-user
           key: ${{ secrets.SSH_KEY }}
-          
-          
-          proxy_host: ${{ secrets.EC2_HOST }}     
+
+
+          proxy_host: ${{ secrets.EC2_HOST }}
           proxy_username: ec2-user
           proxy_key: ${{ secrets.SSH_KEY }}
-          
+
           script: |
             mkdir -p ~/app && cd ~/app
 
-            # Crear el archivo docker-compose.yml con los secretos reales
-            cat <<EOF > docker-compose.yml
-            services:
-              db:
-                image: ${{ secrets.DOCKER_USER }}/innovatech-data:latest
-                container_name: data_service
-                restart: always
-                environment:
-                  - MYSQL_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
-                  - MYSQL_DATABASE=proyecto_db
-                  - MYSQL_USER=root
-                ports:
-                  - "3306:3306"
+            # Crear el archivo .env con los secretos reales
+            cat <<EOF > .env
+            DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_USER_PASSWORD=${{ secrets.DB_USER_PASSWORD }}
+            DB_NAME=proyecto_db
+            DB_HOST=localhost
+            DB_PORT=3306
+            DB_CONTAINER_NAME=data_service
+            DOCKER_USER=${{ secrets.DOCKER_USER }}
+            DB_SERVICE_NAME=database
+            DB_VOLUME_NAME=db_persistence
+            DB_VOLUME_PATH=/var/lib/mysql
+            DOCKER_NETWORK=deploy-net
+            DB_CHARSET=utf8mb4
+            DB_COLLATION=utf8mb4_unicode_ci
+            ENVIRONMENT=production
+            CONTAINER_RESTART_POLICY=always
             EOF
 
-            # Ejecutar con sudo para evitar errores de permisos en Amazon Linux
+            # Descargar e instalar docker-compose si no existe
+            if ! command -v docker-compose &> /dev/null; then
+              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
+
+            # Crear red de Docker si no existe
+            sudo docker network create deploy-net || true
+
+            # Cargar variables de entorno y desplegar
+            source .env
             sudo docker-compose pull
             sudo docker-compose up -d --build
+
+            # Validar que el contenedor está saludable
+            echo "Esperando que la base de datos esté lista..."
+            sleep 10
+
+            # Verificar que el contenedor está corriendo
+            if sudo docker ps | grep -q data_service; then
+              echo "✓ Contenedor data_service está corriendo"
+            else
+              echo "✗ Error: El contenedor data_service no está corriendo"
+              sudo docker logs data_service
+              exit 1
+            fi
+
+            # Verificar que MySQL responde
+            if sudo docker exec data_service mysqladmin ping -h localhost > /dev/null 2>&1; then
+              echo "✓ MySQL está respondiendo"
+            else
+              echo "✗ Error: MySQL no está respondiendo"
+              exit 1
+            fi

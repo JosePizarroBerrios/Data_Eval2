@@ -6,11 +6,13 @@ services:
     container_name: data_service
     restart: always
     environment:
-      # Definimos la contraseña del superusuario root
-      - MYSQL_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
-      - MYSQL_DATABASE=proyecto_db
-      #- MYSQL_USER=user1
-      - MYSQL_PASSWORD=${{ secrets.DB_PASSWORD }}
+      # Credenciales de MySQL
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_USER_PASSWORD}
+      # Configuración del charset
+      - MYSQL_INITDB_ARGS=--character-set-server=${DB_CHARSET} --collation-server=${DB_COLLATION}
     ports:
       - "3306:3306"
     volumes:
@@ -19,7 +21,7 @@ services:
       - deploy-net
 
 networks:
-  deploy-net:
+  ${DOCKER_NETWORK}:
     external: true
 
 volumes:

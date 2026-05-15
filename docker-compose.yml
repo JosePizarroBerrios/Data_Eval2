@@ -12,7 +12,6 @@ services:
       - MYSQL_USER=${DB_USER}
       - MYSQL_PASSWORD=${DB_USER_PASSWORD}
       # Configuración del charset
-      - MYSQL_INITDB_ARGS=--character-set-server=${DB_CHARSET} --collation-server=${DB_COLLATION}
     ports:
       - "3306:3306"
     volumes:
@@ -21,7 +20,7 @@ services:
       - deploy-net
 
 networks:
-  ${DOCKER_NETWORK}:
+  deploy-net:
     external: true
 
 volumes:

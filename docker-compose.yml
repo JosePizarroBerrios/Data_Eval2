@@ -24,3 +24,10 @@ networks:
 
 volumes:
   db_persistence:
+
+  environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=proyecto_db
+      # IMPORTANTE: Borra o comenta estas líneas:
+      # - MYSQL_USER=root  <-- ESTA ES LA QUE MATA EL CONTENEDOR
+      # - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
